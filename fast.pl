@@ -8,16 +8,14 @@ use Math::Prime::Util qw(divisors);
 
 $|++;
 
-my( $file ) = @ARGV;
-my( $seq, $n );
-my $winner_so_far;
+my( $max_exponent, $max_window ) = @ARGV;
+$max_exponent //= 13;
+$max_window   //= 3;
 
 my @primes = (
 	2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47,
 	53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101
 	);
-
-my($max_exponent) = 8;
 
 my @RESULTS;
 
@@ -25,11 +23,9 @@ for( my $window = 1; $window < @primes ; $window++  ) {
 	my @arrays = [ (1) x $window ];
 	push @arrays, generate( [ (1) x $window ], 0, $max_exponent );
 
+	# A couple of special cases
 	push( @arrays, map { [$_] } 2 .. $max_exponent ) if $window == 1;
 	splice @arrays, 2, 0, [2, 2]        if $window == 2;
-
-	# say "WINDOW ($window) -----------------------";
-	# dump_arrays(\@arrays);
 
 	foreach my $array ( @arrays ) {
 		my $product = reduce { $a * $b } map { $primes[$_] ** $array->[$_] } 0 .. $array->$#*;
@@ -45,11 +41,36 @@ for( my $window = 1; $window < @primes ; $window++  ) {
 			];
 		}
 
-	last if $window >= ($ARGV[0] // 3);
+	last if $window >= $max_window;
 	}
 
+my $last_commit = `git rev-parse HEAD`;
+chomp $last_commit;
+
+my $git_branch = `git branch --show-current`;
+chomp $git_branch;
+
+my $git_status = `git diff-index --quiet HEAD -- || echo "dirty"`;
+chomp $git_status;
+$git_status = 'clean' unless length $git_status;
+
+my $header = <<~"HERE";
+Highly composite numbers
+https://github.com/briandfoy/highly_composite_numbers
+SHA $last_commit (branch $git_branch) ($git_status)
+Produced by $0 on @{[scalar localtime]}
+
+Run time: @{[ time - $^T ]} seconds
+Max prime number: $primes[$max_window - 1]
+Max exponent: $max_exponent
+
+@{[ `system_profiler SPHardwareDataType | grep Model`]}
+HERE
+
+$header =~ s/^\h*/# /gm;
+say $header;
+
 say dump_results(\@RESULTS);
-say "Run time: ", time - $^T;
 
 sub commify {
 	no warnings 'void';
@@ -64,7 +85,6 @@ sub dumper { state $rc = require Data::Dumper; Data::Dumper->new([@_])->Indent(1
 
 The exponents must be weakly decreasing, and the last exponent in the group
 must be one.
-
 
 =cut
 
