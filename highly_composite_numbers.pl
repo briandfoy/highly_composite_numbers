@@ -6,8 +6,9 @@ $|++;
 
 my( $file ) = @ARGV;
 my( $seq, $n );
-imy $winner_so_far;
-f( open my $fh, '<', $file ) {
+my $winner_so_far;
+
+if( open my $fh, '<', $file ) {
 	my $last;
 	$last = $_ while(<$fh>);
 
@@ -19,6 +20,8 @@ f( open my $fh, '<', $file ) {
 else {
 	die "Could not open $file: $!";
 	}
+$seq++;
+
 exit;
 
 open my $out, '>', $file or die "Could not open <$file> for writing: $!";
